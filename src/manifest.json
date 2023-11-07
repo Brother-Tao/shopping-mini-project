@@ -1,5 +1,5 @@
 {
-  "name": "小兔鲜儿",
+  "name": "小商城",
   "appid": "",
   "description": "",
   "versionName": "1.0.0",
@@ -50,7 +50,7 @@
   "quickapp": {},
   /* 小程序特有相关 */
   "mp-weixin": {
-    "appid": "",
+    "appid": "wx1edfd27539202355",
     "setting": {
       "urlCheck": false
     },
