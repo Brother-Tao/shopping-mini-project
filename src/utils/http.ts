@@ -27,3 +27,42 @@ const httpInterceptor = {
 }
 uni.addInterceptor('request', httpInterceptor)
 uni.addInterceptor('uploadFile', httpInterceptor)
+
+interface Data<T> {
+  code: string
+  msg: string
+  result: T
+}
+
+export const http = <T>(options: UniApp.RequestOptions) => {
+  return new Promise<Data<T>>((resolve, reject) => {
+    uni.request({
+      ...options,
+      success(res) {
+        if (res.statusCode >= 200 && res.statusCode < 300) {
+          resolve(res.data as Data<T>)
+        } else if (res.statusCode === 401) {
+          memberStore.clearProfile()
+          uni.navigateTo({
+            url: '/pages/login/login',
+          })
+          reject(res)
+        } else {
+          uni.showToast({
+            title: (res.data as Data<T>).msg,
+            icon: 'none',
+          })
+          reject(res)
+        }
+      },
+      // 失败回调
+      fail(err) {
+        uni.showToast({
+          title: '网络错误',
+          icon: 'none',
+        })
+        reject(err)
+      },
+    })
+  })
+}

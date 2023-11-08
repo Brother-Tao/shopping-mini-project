@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { useMemberStore } from '@/stores'
-import '@/utils/http'
+import { http } from '@/utils/http'
 const memberStore = useMemberStore()
 
-const handelRequest = () => {
-  uni.request({
+const handelRequest = async () => {
+  const res = await http({
     method: 'GET',
-    url: '/home/banner',
+    url: '/member/profile',
   })
+  console.log(res)
 }
 </script>
 
