@@ -18,6 +18,7 @@
       v-for="(item, index) in hotRecommendData?.subTypes"
       v-show="index === activeIndex"
       :key="item.id"
+      @scrolltolower="handelScrolltolower"
       class="scroll-view"
     >
       <view class="goods">
@@ -36,7 +37,7 @@
           </view>
         </navigator>
       </view>
-      <view class="loading-text">正在加载...</view>
+      <view class="loading-text">{{ item.finish ? '没有更多数据了' : '正在加载...' }}</view>
     </scroll-view>
   </view>
 </template>
@@ -56,7 +57,6 @@ const hotMap = [
 ]
 const hotRecommendData = ref<HotResult>()
 const activeIndex = ref(0)
-
 const query = defineProps({
   type: {
     type: String,
@@ -70,8 +70,25 @@ uni.setNavigationBarTitle({
 })
 const getHotRecommendData = async () => {
   const res = await getHotRecommendApi(currentMap!.url)
-  // console.log(res)
   hotRecommendData.value = res.result
+}
+
+const handelScrolltolower = async () => {
+  console.log('滚动到底部')
+  // 获取当前选项
+  const currsubTypes = hotRecommendData.value?.subTypes[activeIndex.value]
+  if (currsubTypes!.goodsItems.page > currsubTypes!.goodsItems.pages)
+    return (currsubTypes!.finish = true)
+  currsubTypes!.goodsItems.page++
+  const res = await getHotRecommendApi(currentMap!.url, {
+    subType: currsubTypes?.id,
+    pageSize: 10,
+    page: currsubTypes?.goodsItems.page,
+  })
+  const newItemData = res.result.subTypes[activeIndex.value]
+  hotRecommendData.value!.subTypes[activeIndex.value].goodsItems.items.push(
+    ...newItemData.goodsItems.items,
+  )
 }
 
 onLoad(() => {

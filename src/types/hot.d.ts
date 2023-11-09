@@ -9,7 +9,7 @@ export type HotResult = {
   /** 活动标题 */
   title: string
   /** 子类选项 */
-  subTypes: SubTypeItem[]
+  subTypes: (SubTypeItem & { finish?: boolean })[]
 }
 
 /** 热门推荐-子类选项 */
