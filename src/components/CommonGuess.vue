@@ -6,7 +6,7 @@
   <view class="guess">
     <navigator
       class="guess-item"
-      v-for="item in guessData?.items"
+      v-for="item in guessData"
       :key="item.id"
       :url="`/pages/goods/goods?id=4007498`"
     >
@@ -18,30 +18,41 @@
       </view>
     </navigator>
   </view>
-  <view class="loading-text"> 正在加载... </view>
+  <view class="loading-text"> {{ isFinished ? '没有更多数据了' : '正在加载...' }} </view>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue'
 import { gteGuessLikeApi } from '@/services/home'
 import { onMounted } from 'vue'
-import type { PageResult } from '@/types/global'
+import type { PageParams } from '@/types/global'
 import type { GuessItem } from '@/types/home'
 
-const guessData = ref<PageResult<GuessItem>>()
+const guessData = ref<GuessItem[]>([])
+const isFinished = ref(false)
+const pageParams: Required<PageParams> = {
+  page: 1,
+  pageSize: 10,
+}
+const resetData = () => {
+  guessData.value = []
+  pageParams.page = 1
+  isFinished.value = false
+}
 
 const getGuessData = async () => {
-  const res = await gteGuessLikeApi()
-  // console.log(res)
-  guessData.value = res.result
+  const res = await gteGuessLikeApi(pageParams)
+  if (pageParams.page > res.result.pages) {
+    isFinished.value = true
+    return
+  }
+  guessData.value.push(...res.result.items)
+  pageParams.page++
 }
+defineExpose({ resetData, getMore: getGuessData })
 
 onMounted(() => {
   getGuessData()
-})
-
-defineExpose({
-  getMore: getGuessData,
 })
 </script>
 
