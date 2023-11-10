@@ -32,12 +32,12 @@
           <text class="label">选择</text>
           <text class="text ellipsis"> 请选择商品规格 </text>
         </view>
-        <view class="item arrow">
+        <view class="item arrow" @tap="openPopup('address')">
           <text class="label">送至</text>
           <text class="text ellipsis"> 请选择收获地址 </text>
         </view>
 
-        <view class="item arrow" @tap="popup.open()">
+        <view class="item arrow" @tap="openPopup('service')">
           <text class="label">服务</text>
           <text class="text ellipsis"> 无忧退 快速退款 免费包邮 </text>
         </view>
@@ -105,22 +105,27 @@
     </view>
   </view>
 
-  <uni-popup ref="popup" type="bottom" background-color="#fff">
-    <view>888</view>
+  <uni-popup ref="popup" type="bottom">
+    <AddressPanel v-if="popupType === 'address'" @close="popup.close()" />
+
+    <ServicePanel v-else-if="popupType === 'service'" @close="popup.close()" />
   </uni-popup>
 </template>
 
 <script setup lang="ts">
-import { gteGoodsDetailApi } from '@/services/goods'
-import type { GoodsResult } from '@/types/goods'
 import { onLoad } from '@dcloudio/uni-app'
 import { ref } from 'vue'
+import { gteGoodsDetailApi } from '@/services/goods'
+import type { GoodsResult } from '@/types/goods'
+import AddressPanel from './c-cpns/AddressPanel.vue'
+import ServicePanel from './c-cpns/ServicePanel.vue'
 
 // 获取屏幕边界到安全区域距离
 const { safeAreaInsets } = uni.getSystemInfoSync()
 const goodsDetail = ref<GoodsResult>()
 const mainPicturesIndex = ref(0)
 const popup = ref()
+const popupType = ref<String>('')
 
 const query = defineProps({
   id: {
@@ -131,7 +136,6 @@ const query = defineProps({
 
 const getGoodsDetailData = async () => {
   const res = await gteGoodsDetailApi(query.id)
-  // console.log(res)
   goodsDetail.value = res.result
 }
 
@@ -145,6 +149,11 @@ const handelTapImg = (url: String) => {
     current: mainPicturesIndex.value,
     urls: goodsDetail.value!.mainPictures,
   })
+}
+
+const openPopup = (type: String) => {
+  popupType.value = type
+  popup.value?.open()
 }
 
 onLoad(async () => {
