@@ -35,6 +35,8 @@
 <script setup lang="ts">
 import { getLoginApi, postLoginSimpleApi } from '@/services/logo'
 import { onLoad } from '@dcloudio/uni-app'
+import { useMemberStore } from '@/stores'
+const memberStore = useMemberStore()
 
 //
 let code = ''
@@ -54,7 +56,13 @@ const onGetphonenumber: UniHelper.ButtonOnGetphonenumber = async (e) => {
 const onPostLoginSimple = async () => {
   const res = await postLoginSimpleApi('13566666666')
   // 成功提示
-  uni.showToast({ icon: 'none', title: '登录成功' })
+  memberStore.setProfile(res.result)
+  uni.showToast({ icon: 'success', title: '登录成功' })
+  setTimeout(() => {
+    uni.switchTab({
+      url: '/pages/my/my',
+    })
+  }, 1000)
 }
 </script>
 
