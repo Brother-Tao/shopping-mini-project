@@ -1,4 +1,127 @@
+<script setup lang="ts">
+import { onShow } from '@dcloudio/uni-app'
+import { ref } from 'vue'
+import { gteGoodsDetailApi } from '@/services/goods'
+import type { GoodsResult } from '@/types/goods'
+import AddressPanel from './c-cpns/AddressPanel.vue'
+import ServicePanel from './c-cpns/ServicePanel.vue'
+import type {
+  SkuPopupEvent,
+  SkuPopupInstanceType,
+  SkuPopupLocaldata,
+} from '@/components/vk-data-goods-sku-popup/vk-data-goods-sku-popup'
+import { computed } from 'vue'
+import { postMemberCartAPI } from '@/services/cart'
+const query = defineProps({
+  id: {
+    String,
+    default: '',
+  },
+})
+// 获取屏幕边界到安全区域距离
+const { safeAreaInsets } = uni.getSystemInfoSync()
+const goodsDetail = ref<GoodsResult>()
+const mainPicturesIndex = ref(0)
+const popup = ref()
+const popupType = ref<String>('')
+const isShowSku = ref(false)
+const skuLocaldata = ref({} as SkuPopupLocaldata)
+const skuPopupRef = ref<SkuPopupInstanceType>()
+enum SkuMode {
+  Both = 1,
+  Cart = 2,
+  Buy = 3,
+}
+const mode = ref<SkuMode>(SkuMode.Both)
+const selectArrText = computed(() => {
+  return skuPopupRef.value?.selectArr?.join(' ').trim() || '请选择商品规格'
+})
+const openSkuPopup = (val: SkuMode) => {
+  isShowSku.value = true
+  mode.value = val
+}
+
+const getGoodsDetailData = async () => {
+  const res = await gteGoodsDetailApi(query.id)
+  goodsDetail.value = res.result
+  skuLocaldata.value = {
+    _id: res.result.id,
+    name: res.result.name,
+    goods_thumb: res.result.mainPictures[0],
+    spec_list: res.result.specs.map((item) => {
+      return {
+        name: item.name,
+        list: item.values,
+      }
+    }),
+    sku_list: res.result.skus.map((item) => {
+      return {
+        _id: item.id,
+        goods_id: res.result.id,
+        goods_name: res.result.name,
+        image: item.picture,
+        price: item.price * 100,
+        stock: item.inventory,
+        sku_name_arr: item.specs.map((iten) => iten.valueName),
+      }
+    }),
+  }
+}
+
+const onChange: UniHelper.SwiperOnChange = (e) => {
+  // console.log(e.detail.current)
+  mainPicturesIndex.value = e.detail.current
+}
+
+const handelTapImg = (url: String) => {
+  uni.previewImage({
+    current: mainPicturesIndex.value,
+    urls: goodsDetail.value!.mainPictures,
+  })
+}
+
+const openPopup = (type: String) => {
+  popupType.value = type
+  popup.value?.open()
+}
+
+const onAddCart = async (e: SkuPopupEvent) => {
+  console.log(e)
+  await postMemberCartAPI({ skuId: e._id, count: e.buy_num })
+  uni.showToast({
+    title: '添加成功',
+    icon: 'success',
+    duration: 1000,
+  })
+  isShowSku.value = false
+}
+
+const onBuyNow = () => {
+  popup.value?.close()
+  openSkuPopup(SkuMode.Buy)
+}
+
+onShow(async () => {
+  await Promise.all([getGoodsDetailData()])
+})
+</script>
+
 <template>
+  <vk-data-goods-sku-popup
+    v-model="isShowSku"
+    :localdata="skuLocaldata"
+    :mode="mode"
+    add-cart-background-color="#FFA868"
+    buy-now-background-color="#27BA9B"
+    ref="skuPopupRef"
+    :actived-style="{
+      color: '#27BA9B',
+      borderColor: '#27BA9B',
+      backgroundColor: '#E9F8F5',
+    }"
+    @add-cart="onAddCart"
+    @buy-now="onBuyNow"
+  />
   <scroll-view scroll-y class="viewport">
     <!-- 基本信息 -->
     <view class="goods">
@@ -28,9 +151,9 @@
 
       <!-- 操作面板 -->
       <view class="action">
-        <view class="item arrow">
+        <view class="item arrow" @tap="openSkuPopup(SkuMode.Both)">
           <text class="label">选择</text>
-          <text class="text ellipsis"> 请选择商品规格 </text>
+          <text class="text ellipsis"> {{ selectArrText }} </text>
         </view>
         <view class="item arrow" @tap="openPopup('address')">
           <text class="label">送至</text>
@@ -100,8 +223,8 @@
       </navigator>
     </view>
     <view class="buttons">
-      <view class="addcart"> 加入购物车 </view>
-      <view class="buynow"> 立即购买 </view>
+      <view class="addcart" @tap="openSkuPopup(SkuMode.Cart)"> 加入购物车 </view>
+      <view class="buynow" @tap="openSkuPopup(SkuMode.Buy)"> 立即购买 </view>
     </view>
   </view>
 
@@ -111,55 +234,6 @@
     <ServicePanel v-else-if="popupType === 'service'" @close="popup.close()" />
   </uni-popup>
 </template>
-
-<script setup lang="ts">
-import { onLoad } from '@dcloudio/uni-app'
-import { ref } from 'vue'
-import { gteGoodsDetailApi } from '@/services/goods'
-import type { GoodsResult } from '@/types/goods'
-import AddressPanel from './c-cpns/AddressPanel.vue'
-import ServicePanel from './c-cpns/ServicePanel.vue'
-
-// 获取屏幕边界到安全区域距离
-const { safeAreaInsets } = uni.getSystemInfoSync()
-const goodsDetail = ref<GoodsResult>()
-const mainPicturesIndex = ref(0)
-const popup = ref()
-const popupType = ref<String>('')
-
-const query = defineProps({
-  id: {
-    String,
-    default: '',
-  },
-})
-
-const getGoodsDetailData = async () => {
-  const res = await gteGoodsDetailApi(query.id)
-  goodsDetail.value = res.result
-}
-
-const onChange: UniHelper.SwiperOnChange = (e) => {
-  console.log(e.detail.current)
-  mainPicturesIndex.value = e.detail.current
-}
-
-const handelTapImg = (url: String) => {
-  uni.previewImage({
-    current: mainPicturesIndex.value,
-    urls: goodsDetail.value!.mainPictures,
-  })
-}
-
-const openPopup = (type: String) => {
-  popupType.value = type
-  popup.value?.open()
-}
-
-onLoad(async () => {
-  await Promise.all([getGoodsDetailData()])
-})
-</script>
 
 <style lang="scss">
 page {

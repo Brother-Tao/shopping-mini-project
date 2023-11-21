@@ -8,7 +8,7 @@
       class="guess-item"
       v-for="item in guessData"
       :key="item.id"
-      :url="`/pages/goods/goods?id=4007498`"
+      :url="`/pages/goods/goods?id=${item.id}`"
     >
       <image class="image" mode="aspectFill" :src="item.picture"></image>
       <view class="name"> {{ item.desc }} </view>
